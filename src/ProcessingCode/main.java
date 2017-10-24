@@ -63,9 +63,9 @@ public class main extends PApplet {
 	
 	float emotivMax = 1;
 	
-	//Pluse variables
-	int samplingTime = 5;
-	int numSamples = 600;
+	//Pulse variables
+	int samplingTime = 20;
+	int numSamples = 100;
 	int numSamplesRead = 0;
 	int cycles = 0;
 	float pulseRate, range, numPoints, 
@@ -79,6 +79,8 @@ public class main extends PApplet {
 	float plotX2, plotY2;
 	float labelX, labelY;
 
+	boolean enableEmotiv = true, enableHeartbeat = true;
+	
 	PFont plotFont;
 	Serial port;
 	
@@ -89,16 +91,17 @@ public class main extends PApplet {
     	size(720, 650);
 	}
     public void setup(){
-
-    	EmotivSetup();
-    	//HeartbeatSetup();
+    	if(enableEmotiv)
+    		EmotivSetup();
+    	if(enableHeartbeat)
+    		HeartbeatSetup();
     }
     void HeartbeatSetup() {    	
     	 
 		// Corners of the plotted time series
 		plotX1 = 20; 
 		plotX2 = width - 20;
-		labelX = 120;
+		labelX = 15;
 		plotY1 = 50;
 		plotY2 = height - 250;
 		labelY = height - 200;
@@ -110,7 +113,7 @@ public class main extends PApplet {
 			println("Serial " + i + ": " + Serial.list()[i]);
 		}
 		
-		port = new Serial(this, Serial.list()[0], 115200);
+		port = new Serial(this, Serial.list()[1], 115200);
 		thread("readData");
 		// don't generate a serialEvent() unless you get a newline character:
 		port.bufferUntil('\n');
@@ -260,7 +263,6 @@ public class main extends PApplet {
     	      String inString = port.readStringUntil('\n');
     	      if (inString != null && inString != "") {
     	        inString = trim(inString);
-    	        
     	        float inByte = 0;
     	        try{
     	        	inByte = Float.parseFloat(inString);
@@ -303,7 +305,7 @@ public class main extends PApplet {
     	      }
     	    }
     	    else{
-    	      delay(1);
+    	      delay(20);
     	    }
     	  }
     	}
@@ -312,11 +314,16 @@ public class main extends PApplet {
     public void draw(){
     	background(224);
     	
-    	//ColorBackground();
-    	//DrawPlot();
-    	DrawPlotsEmotiv();
-    	//DrawDataCurve(); 
-    	DrawDataCurvesEmotiv();
+    	if(enableHeartbeat){
+    		ColorBackground();
+    		DrawPlot();
+    	}
+    	if(enableEmotiv)
+    		DrawPlotsEmotiv();
+    	if(enableHeartbeat)
+    		DrawDataCurve(); 
+    	if(enableEmotiv)
+    		DrawDataCurvesEmotiv();
     }
     
     void FindHeartRate(){
@@ -411,7 +418,7 @@ public class main extends PApplet {
 	  textSize(20);
 	  textAlign(LEFT);
 	  String title = "Skypulse";
-	  text(title, plotX1, plotY1 - 10);
+	  text(title, (plotX1 + plotY2) / 2, plotY1 - 10);
 	  
 	  // Draw Axis Labels
 	  fill(0);
@@ -419,6 +426,14 @@ public class main extends PApplet {
 	  textLeading(15);
 	  textAlign(CENTER);
 	  text("Samples ("+nfc(samplingTime, 0)+" ms)", (plotX1+plotX2)/2, labelY);
+	  
+	  pushMatrix();
+	  translate(labelX,(plotY1 + plotY2) / 2);
+	  rotate(-HALF_PI);
+	  text("Reading",0,0);
+	  popMatrix(); 
+	  textSize(12);
+	  text((int)(currentMax > lastMax ? currentMax : lastMax),labelX + 10, plotY1 - 10);
 	  
 	  // Draw Sample Labels
 	  fill(0);
@@ -447,6 +462,9 @@ public class main extends PApplet {
 	      y = plotY2 - ((value / (lastMax > currentMax ? lastMax : currentMax)) * (plotY2 - plotY1 - 20));
 	      stroke(0, 102, 153);
 	      curveVertex(x, y);
+	      if(row == ((numSamplesRead - 1) % numSamples) - 1){
+	    	  text(value + "", x, y);
+	      }
 	   }  
 	  
 	  endShape();
