@@ -3,6 +3,9 @@ import processing.core.PApplet;
 import processing.core.PFont;
 import processing.serial.Serial;
 
+import oscP5.*; 
+import netP5.*;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -84,6 +87,17 @@ public class main extends PApplet {
 	PFont plotFont;
 	Serial port;
 	
+	
+	OscP5 oscP5;
+	NetAddress myBroadcastLocation; 
+	NetAddressList myNetAddressList = new NetAddressList();
+	/* the broadcast port is the port the clients should listen for incoming messages from the server*/
+	int myBroadcastPort = 12000;
+
+	String myConnectPattern = "/server/connect";
+	String myDisconnectPattern = "/server/disconnect";
+	
+	
 	public static void main(String[] args) {
 		PApplet.main("ProcessingCode.main");
 	}
@@ -95,6 +109,61 @@ public class main extends PApplet {
     		EmotivSetup();
     	if(enableHeartbeat)
     		HeartbeatSetup();
+    	oscP5 = new OscP5(this,12000);
+    	myBroadcastLocation = new NetAddress("127.0.0.1",32000);
+    }
+    public void keyPressed() {
+    	  OscMessage m;
+    	  switch(key) {
+    	    case('c'):
+    	      /* connect to the broadcaster */
+    	      m = new OscMessage("/server/connect",new Object[0]);
+    	      oscP5.flush(m,myBroadcastLocation);  
+    	      break;
+    	    case('d'):
+    	      /* disconnect from the broadcaster */
+    	      m = new OscMessage("/server/disconnect",new Object[0]);
+    	      oscP5.flush(m,myBroadcastLocation);  
+    	      break;
+
+    	  }  
+    }
+    private void connect(String theIPaddress) {
+        if (!myNetAddressList.contains(theIPaddress, myBroadcastPort)) {
+          myNetAddressList.add(new NetAddress(theIPaddress, myBroadcastPort));
+          println("### adding "+theIPaddress+" to the list.");
+        } else {
+          println("### "+theIPaddress+" is already connected.");
+        }
+        println("### currently there are "+myNetAddressList.list().size()+" remote locations connected.");
+    }
+
+
+
+   private void disconnect(String theIPaddress) {
+   if (myNetAddressList.contains(theIPaddress, myBroadcastPort)) {
+   		myNetAddressList.remove(theIPaddress, myBroadcastPort);
+          println("### removing "+theIPaddress+" from the list.");
+        } else {
+          println("### "+theIPaddress+" is not connected.");
+        }
+          println("### currently there are "+myNetAddressList.list().size());
+    }
+    void oscEvent(OscMessage theOscMessage) {
+	  /* check if the address pattern fits any of our patterns */
+	  if (theOscMessage.addrPattern().equals(myConnectPattern)) {
+	    connect(theOscMessage.netAddress().address());
+	  }
+	  else if (theOscMessage.addrPattern().equals(myDisconnectPattern)) {
+	    disconnect(theOscMessage.netAddress().address());
+	  }
+	  /**
+	   * if pattern matching was not successful, then broadcast the incoming
+	   * message to all addresses in the netAddresList. 
+	   */
+	  else {
+	    oscP5.send(theOscMessage, myNetAddressList);
+	  }
     }
     void HeartbeatSetup() {    	
     	 
@@ -177,31 +246,42 @@ public class main extends PApplet {
 			}
 	
 			if (ready) {			    
+				OscMessage myOscMessage = new OscMessage("/1/Emotiv");
                 int result = Edk.INSTANCE.IEE_GetAverageBandPowers(userID.getValue(), 3, theta, alpha, low_beta, high_beta, gamma);
                 if(result == EdkErrorCode.EDK_OK.ToInt()){
-                	
+                	/*
                 	System.out.print(theta.getValue() + ", "); 
                 	System.out.print(alpha.getValue() + ", ");
                 	System.out.print(low_beta.getValue() + ", ");
                 	System.out.print(high_beta.getValue() + ", "); 
                 	System.out.println(gamma.getValue());     
-                	
+                	*/
                 	Tuple band0 = new Tuple(theta.getValue(), alpha.getValue(), low_beta.getValue(), high_beta.getValue(), gamma.getValue());
                 	bandValues.get(0).add(band0);
                 	if(band0.Max() > emotivMax) emotivMax = (float) band0.Max();
+                	myOscMessage.add(theta.getValue());
+                	myOscMessage.add(alpha.getValue());
+                	myOscMessage.add(low_beta.getValue());
+                	myOscMessage.add(high_beta.getValue());
+                	myOscMessage.add(gamma.getValue());
                 }
                 result = Edk.INSTANCE.IEE_GetAverageBandPowers(userID.getValue(), 7, theta, alpha, low_beta, high_beta, gamma);
                 if(result == EdkErrorCode.EDK_OK.ToInt()){
-                	
+                	/*
                 	System.out.print(theta.getValue() + ", "); 
                 	System.out.print(alpha.getValue() + ", ");
                 	System.out.print(low_beta.getValue() + ", ");
                 	System.out.print(high_beta.getValue() + ", "); 
                 	System.out.println(gamma.getValue());     
-                	
+                	*/
                 	Tuple band1 = new Tuple(theta.getValue(), alpha.getValue(), low_beta.getValue(), high_beta.getValue(), gamma.getValue());
                 	bandValues.get(1).add(band1);
                 	if(band1.Max() > emotivMax) emotivMax = (float) band1.Max();
+                	myOscMessage.add(theta.getValue());
+                	myOscMessage.add(alpha.getValue());
+                	myOscMessage.add(low_beta.getValue());
+                	myOscMessage.add(high_beta.getValue());
+                	myOscMessage.add(gamma.getValue());
                 }          
                 result = Edk.INSTANCE.IEE_GetAverageBandPowers(userID.getValue(), 9, theta, alpha, low_beta, high_beta, gamma);
                 if(result == EdkErrorCode.EDK_OK.ToInt()){
@@ -215,6 +295,11 @@ public class main extends PApplet {
                 	Tuple band2 = new Tuple(theta.getValue(), alpha.getValue(), low_beta.getValue(), high_beta.getValue(), gamma.getValue());
                 	bandValues.get(2).add(band2);          
                 	if(band2.Max() > emotivMax) emotivMax = (float) band2.Max();
+                	myOscMessage.add(theta.getValue());
+                	myOscMessage.add(alpha.getValue());
+                	myOscMessage.add(low_beta.getValue());
+                	myOscMessage.add(high_beta.getValue());
+                	myOscMessage.add(gamma.getValue());
                 }
                 result = Edk.INSTANCE.IEE_GetAverageBandPowers(userID.getValue(), 12, theta, alpha, low_beta, high_beta, gamma);
                 if(result == EdkErrorCode.EDK_OK.ToInt()){
@@ -228,6 +313,11 @@ public class main extends PApplet {
                 	Tuple band3 = new Tuple(theta.getValue(), alpha.getValue(), low_beta.getValue(), high_beta.getValue(), gamma.getValue());
                 	bandValues.get(3).add(band3);
                 	if(band3.Max() > emotivMax) emotivMax = (float) band3.Max();
+                	myOscMessage.add(theta.getValue());
+                	myOscMessage.add(alpha.getValue());
+                	myOscMessage.add(low_beta.getValue());
+                	myOscMessage.add(high_beta.getValue());
+                	myOscMessage.add(gamma.getValue());
                 }
                 result = Edk.INSTANCE.IEE_GetAverageBandPowers(userID.getValue(), 16, theta, alpha, low_beta, high_beta, gamma);
                 if(result == EdkErrorCode.EDK_OK.ToInt()){
@@ -241,7 +331,13 @@ public class main extends PApplet {
                 	Tuple band4 = new Tuple(theta.getValue(), alpha.getValue(), low_beta.getValue(), high_beta.getValue(), gamma.getValue());
                 	bandValues.get(4).add(band4);
                 	if(band4.Max() > emotivMax) emotivMax = (float) band4.Max();
+                	myOscMessage.add(theta.getValue());
+                	myOscMessage.add(alpha.getValue());
+                	myOscMessage.add(low_beta.getValue());
+                	myOscMessage.add(high_beta.getValue());
+                	myOscMessage.add(gamma.getValue());
                 }
+                oscP5.send(myOscMessage, myBroadcastLocation);
                 for(int i = 0; i < bandValues.size(); i++) {
                 	while(bandValues.get(i).size() > numSamplesEmotiv) {
                 		bandValues.get(i).remove(0);
@@ -270,6 +366,11 @@ public class main extends PApplet {
     	        	System.out.println("error reading data");
     	        	continue;
     	        }
+    	        
+    	        OscMessage myOscMessage = new OscMessage("/1/heartbeat");
+    	        myOscMessage.add(inByte);
+    	        oscP5.send(myOscMessage, myBroadcastLocation);
+    	        
     	        inputValues[numSamplesRead % numSamples] = inByte;
     	        
     	        if(numSamplesRead % numSamples >= 2){
