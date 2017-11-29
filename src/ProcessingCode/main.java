@@ -82,7 +82,7 @@ public class main extends PApplet {
 	float plotX2, plotY2;
 	float labelX, labelY;
 
-	boolean enableEmotiv = true, enableHeartbeat = true;
+	boolean enableEmotiv = true, enableHeartbeat = false;
 	
 	PFont plotFont;
 	Serial port;
@@ -92,7 +92,7 @@ public class main extends PApplet {
 	NetAddress myBroadcastLocation; 
 	NetAddressList myNetAddressList = new NetAddressList();
 	/* the broadcast port is the port the clients should listen for incoming messages from the server*/
-	int myBroadcastPort = 12000;
+	int myBroadcastPort = 1234;
 
 	String myConnectPattern = "/server/connect";
 	String myDisconnectPattern = "/server/disconnect";
@@ -105,12 +105,12 @@ public class main extends PApplet {
     	size(720, 650);
 	}
     public void setup(){
+    	oscP5 = new OscP5(this,myBroadcastPort);
+    	myBroadcastLocation = new NetAddress("127.0.0.1",myBroadcastPort);
     	if(enableEmotiv)
     		EmotivSetup();
     	if(enableHeartbeat)
     		HeartbeatSetup();
-    	oscP5 = new OscP5(this,12000);
-    	myBroadcastLocation = new NetAddress("127.0.0.1",32000);
     }
     public void keyPressed() {
     	  OscMessage m;
@@ -229,7 +229,6 @@ public class main extends PApplet {
     public void UpdateEmotiv() {
     	while(true) {
 	    	state = Edk.INSTANCE.IEE_EngineGetNextEvent(eEvent);
-	
 			// New event needs to be handled
 			if (state == EdkErrorCode.EDK_OK.ToInt()) {
 				int eventType = Edk.INSTANCE.IEE_EmoEngineEventGetType(eEvent);
@@ -246,7 +245,16 @@ public class main extends PApplet {
 			}
 	
 			if (ready) {			    
-				OscMessage myOscMessage = new OscMessage("/1/Emotiv");
+				OscMessage thetaMessage = new OscMessage("/1/Theta");
+				OscMessage alphaMessage = new OscMessage("/1/Alpha");
+				OscMessage lowBetaMessage = new OscMessage("/1/LowBeta");
+				OscMessage highBetaMessage = new OscMessage("/1/HighBeta");
+				OscMessage gammaMessage = new OscMessage("/1/Gamma");
+				double thetaSum = 0;
+		    	double alphaSum = 0;
+		    	double lowBetaSum = 0;
+		    	double highBetaSum = 0;
+		    	double gammaSum = 0;
                 int result = Edk.INSTANCE.IEE_GetAverageBandPowers(userID.getValue(), 3, theta, alpha, low_beta, high_beta, gamma);
                 if(result == EdkErrorCode.EDK_OK.ToInt()){
                 	/*
@@ -259,11 +267,11 @@ public class main extends PApplet {
                 	Tuple band0 = new Tuple(theta.getValue(), alpha.getValue(), low_beta.getValue(), high_beta.getValue(), gamma.getValue());
                 	bandValues.get(0).add(band0);
                 	if(band0.Max() > emotivMax) emotivMax = (float) band0.Max();
-                	myOscMessage.add(theta.getValue());
-                	myOscMessage.add(alpha.getValue());
-                	myOscMessage.add(low_beta.getValue());
-                	myOscMessage.add(high_beta.getValue());
-                	myOscMessage.add(gamma.getValue());
+                	thetaSum += theta.getValue();
+                	alphaSum += alpha.getValue();
+                	lowBetaSum += low_beta.getValue();
+                	highBetaSum += high_beta.getValue();
+                	gammaSum += gamma.getValue();
                 }
                 result = Edk.INSTANCE.IEE_GetAverageBandPowers(userID.getValue(), 7, theta, alpha, low_beta, high_beta, gamma);
                 if(result == EdkErrorCode.EDK_OK.ToInt()){
@@ -277,11 +285,11 @@ public class main extends PApplet {
                 	Tuple band1 = new Tuple(theta.getValue(), alpha.getValue(), low_beta.getValue(), high_beta.getValue(), gamma.getValue());
                 	bandValues.get(1).add(band1);
                 	if(band1.Max() > emotivMax) emotivMax = (float) band1.Max();
-                	myOscMessage.add(theta.getValue());
-                	myOscMessage.add(alpha.getValue());
-                	myOscMessage.add(low_beta.getValue());
-                	myOscMessage.add(high_beta.getValue());
-                	myOscMessage.add(gamma.getValue());
+                	thetaSum += theta.getValue();
+                	alphaSum += alpha.getValue();
+                	lowBetaSum += low_beta.getValue();
+                	highBetaSum += high_beta.getValue();
+                	gammaSum += gamma.getValue();
                 }          
                 result = Edk.INSTANCE.IEE_GetAverageBandPowers(userID.getValue(), 9, theta, alpha, low_beta, high_beta, gamma);
                 if(result == EdkErrorCode.EDK_OK.ToInt()){
@@ -295,11 +303,11 @@ public class main extends PApplet {
                 	Tuple band2 = new Tuple(theta.getValue(), alpha.getValue(), low_beta.getValue(), high_beta.getValue(), gamma.getValue());
                 	bandValues.get(2).add(band2);          
                 	if(band2.Max() > emotivMax) emotivMax = (float) band2.Max();
-                	myOscMessage.add(theta.getValue());
-                	myOscMessage.add(alpha.getValue());
-                	myOscMessage.add(low_beta.getValue());
-                	myOscMessage.add(high_beta.getValue());
-                	myOscMessage.add(gamma.getValue());
+                	thetaSum += theta.getValue();
+                	alphaSum += alpha.getValue();
+                	lowBetaSum += low_beta.getValue();
+                	highBetaSum += high_beta.getValue();
+                	gammaSum += gamma.getValue();
                 }
                 result = Edk.INSTANCE.IEE_GetAverageBandPowers(userID.getValue(), 12, theta, alpha, low_beta, high_beta, gamma);
                 if(result == EdkErrorCode.EDK_OK.ToInt()){
@@ -313,11 +321,11 @@ public class main extends PApplet {
                 	Tuple band3 = new Tuple(theta.getValue(), alpha.getValue(), low_beta.getValue(), high_beta.getValue(), gamma.getValue());
                 	bandValues.get(3).add(band3);
                 	if(band3.Max() > emotivMax) emotivMax = (float) band3.Max();
-                	myOscMessage.add(theta.getValue());
-                	myOscMessage.add(alpha.getValue());
-                	myOscMessage.add(low_beta.getValue());
-                	myOscMessage.add(high_beta.getValue());
-                	myOscMessage.add(gamma.getValue());
+                	thetaSum += theta.getValue();
+                	alphaSum += alpha.getValue();
+                	lowBetaSum += low_beta.getValue();
+                	highBetaSum += high_beta.getValue();
+                	gammaSum += gamma.getValue();
                 }
                 result = Edk.INSTANCE.IEE_GetAverageBandPowers(userID.getValue(), 16, theta, alpha, low_beta, high_beta, gamma);
                 if(result == EdkErrorCode.EDK_OK.ToInt()){
@@ -331,13 +339,22 @@ public class main extends PApplet {
                 	Tuple band4 = new Tuple(theta.getValue(), alpha.getValue(), low_beta.getValue(), high_beta.getValue(), gamma.getValue());
                 	bandValues.get(4).add(band4);
                 	if(band4.Max() > emotivMax) emotivMax = (float) band4.Max();
-                	myOscMessage.add(theta.getValue());
-                	myOscMessage.add(alpha.getValue());
-                	myOscMessage.add(low_beta.getValue());
-                	myOscMessage.add(high_beta.getValue());
-                	myOscMessage.add(gamma.getValue());
+                	thetaSum += theta.getValue();
+                	alphaSum += alpha.getValue();
+                	lowBetaSum += low_beta.getValue();
+                	highBetaSum += high_beta.getValue();
+                	gammaSum += gamma.getValue();
                 }
-                oscP5.send(myOscMessage, myBroadcastLocation);
+                thetaMessage.add(Double.toString(thetaSum));
+                alphaMessage.add(Double.toString(alphaSum));
+                lowBetaMessage.add(Double.toString(lowBetaSum));
+                highBetaMessage.add(Double.toString(highBetaSum));
+                gammaMessage.add(Double.toString(gammaSum));
+                oscP5.send(thetaMessage, myBroadcastLocation);
+                oscP5.send(alphaMessage, myBroadcastLocation);
+                oscP5.send(lowBetaMessage, myBroadcastLocation);
+                oscP5.send(highBetaMessage, myBroadcastLocation);
+                oscP5.send(gammaMessage, myBroadcastLocation);
                 for(int i = 0; i < bandValues.size(); i++) {
                 	while(bandValues.get(i).size() > numSamplesEmotiv) {
                 		bandValues.get(i).remove(0);
@@ -367,7 +384,7 @@ public class main extends PApplet {
     	        	continue;
     	        }
     	        
-    	        OscMessage myOscMessage = new OscMessage("/1/heartbeat");
+    	        OscMessage myOscMessage = new OscMessage("/1/Heartbeat");
     	        myOscMessage.add(inByte);
     	        oscP5.send(myOscMessage, myBroadcastLocation);
     	        
@@ -414,7 +431,9 @@ public class main extends PApplet {
 
     public void draw(){
     	background(224);
-    	
+    	OscMessage test = new OscMessage("/1/Test");
+    	test.add("test");
+    	oscP5.send(test, myBroadcastLocation);
     	if(enableHeartbeat){
     		ColorBackground();
     		DrawPlot();
