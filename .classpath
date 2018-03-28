@@ -6,7 +6,7 @@
 	<classpathentry kind="lib" path="C:/Users/Skylar/Documents/BiosensorImagery/jna.jar"/>
 	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/Iedk"/>
 	<classpathentry kind="lib" path="C:/Users/Skylar/Documents/BiosensorImagery/serial.jar"/>
-	<classpathentry kind="lib" path="C:/Users/Skylar/Documents/BiosensorImagery/jssc.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Skylar/Downloads/jSSC-2.7.0-Release/jSSC-2.7.0-Release/jssc.jar"/>
 	<classpathentry exported="true" kind="lib" path="oscP5.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

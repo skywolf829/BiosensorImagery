@@ -182,7 +182,7 @@ public class main extends PApplet {
 			println("Serial " + i + ": " + Serial.list()[i]);
 		}
 		
-		port = new Serial(this, Serial.list()[1], 115200);
+		port = new Serial(this, Serial.list()[0], 115200);
 		thread("readData");
 		// don't generate a serialEvent() unless you get a newline character:
 		port.bufferUntil('\n');
@@ -385,7 +385,7 @@ public class main extends PApplet {
     	        }
     	        
     	        OscMessage myOscMessage = new OscMessage("/1/Heartbeat");
-    	        myOscMessage.add(inByte);
+    	        myOscMessage.add(Float.toString(inByte));
     	        oscP5.send(myOscMessage, myBroadcastLocation);
     	        
     	        inputValues[numSamplesRead % numSamples] = inByte;
